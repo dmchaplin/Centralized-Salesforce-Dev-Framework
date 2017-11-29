@@ -81,7 +81,7 @@ public class DiagnosticsInstrumentation {
 		ExceptionTrace += ' |\n ';
 		if(ConfigService.DiagnosticsEnabled){
 			try {
-				DMLManager.insertAsSystem(dbg);
+				insert dbg;
 			}
 			catch(Exception e){
 				// Unable to insert debug info
@@ -170,7 +170,7 @@ public class DiagnosticsInstrumentation {
 		}
 		if (expiredDebugInfoLog.size()>0){
 			try {
-				DMLManager.deleteAsSystem(expiredDebugInfoLog);
+				delete expiredDebugInfoLog;
 				Database.emptyRecycleBin(expiredDebugInfoLog);
 			}
 			catch(Exception ex){

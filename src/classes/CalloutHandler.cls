@@ -38,7 +38,7 @@ public class CalloutHandler {
     public static final String PATCH_METHOD = 'PATCH';
     /** Constant representing the DELETE HTTP Method */
     public static final String DELETE_METHOD = 'DELETE';
-    
+
     /**
     * @author Scott Covert
     * @date 2/21/2016
@@ -47,7 +47,7 @@ public class CalloutHandler {
     */
     @future(callout=true)
     public static void sendAsyncCallout(Id crId)
-    {       
+    {
         // Verify kill switch is not enabled
         if (ConfigService.KillSwitchEnabled) return;
         // Query for Callout Request
@@ -71,7 +71,7 @@ public class CalloutHandler {
             HttpRequest request = new HttpRequest();
             request.setMethod(cr.Method__c);
             request.setEndpoint(cr.Endpoint__c);
-            request.setTimeout(calculateTimeout(cr));            
+            request.setTimeout(calculateTimeout(cr));
             list<Attachment> requestAttachments = [SELECT Id, CreatedDate, ParentId, Name, ContentType, Body FROM Attachment WHERE ParentId = :cr.Id];
             for (Attachment a : requestAttachments)
             {
@@ -85,20 +85,20 @@ public class CalloutHandler {
                     for (String headerKeyValuePair : requestHeaders.split(';'))
                     {
                         request.setHeader(headerKeyValuePair.split(':')[0], headerKeyValuePair.split(':')[0]);
-                    }                    
+                    }
                 }
                 else if (a.Name == REQUEST_CERT_NAME)
                 {
                     request.setClientCertificateName(a.Body.toString());
                 }
             }
-            HttpResponse response = h.send(request);            
-            processCalloutResponse(response, cr);         
+            HttpResponse response = h.send(request);
+            processCalloutResponse(response, cr);
         }
         catch (Exception ex){
-            processFailure(cr, ex);                     
+            processFailure(cr, ex);
         }
-        updateCalloutRequest(cr, start);        
+        updateCalloutRequest(cr, start);
     }
 
     /**
@@ -110,8 +110,8 @@ public class CalloutHandler {
     */
     public static void createRequestBody(String jsonPayload, Id crId)
     {
-        Attachment requestBodyAttachment = new Attachment(ParentId=crId,Name=REQUEST_BODY_NAME,Body=Blob.valueOf(jsonPayload),ContentType=JSON_CONTENT_TYPE);
-        DMLManager.insertAsSystem(requestBodyAttachment);
+        Attachment requestBodyAttachment = new Attachment(ParentId=crId,Name=REQUEST_NAME,Body=Blob.valueOf(jsonPayload),ContentType=JSON_CONTENT_TYPE);
+        insert requestBodyAttachment;
     }
 
     /**
@@ -213,14 +213,8 @@ public class CalloutHandler {
         cr.Sent__c = System.now();
         Decimal timeDiff = cr.Sent__c.getTime() - start;
         cr.Duration__c = timeDiff.Divide(1000,3);
-        DMLManager.updateAsSystem(cr);
-        // Since header attachments may contain authorization information it is probably best to delete them
-        list<Attachment> requestHeaderAttachments = [SELECT Id FROM Attachment WHERE Name = :REQUEST_HEADERS_NAME AND ParentId = :cr.Id];
-        if (!requestHeaderAttachments.isEmpty()) 
-        {
-            DMLManager.deleteAsSystem(requestHeaderAttachments);
-            Database.emptyRecycleBin(requestHeaderAttachments);
-        }
+        update cr;
+
     }
 
     /**
@@ -233,7 +227,7 @@ public class CalloutHandler {
     private static void createResponseBody(String httpResponse, Id crId)
     {
         Attachment requestBodyAttachment = new Attachment(ParentId=crId,Name=RESPONSE_NAME,Body=Blob.valueOf(httpResponse),ContentType=JSON_CONTENT_TYPE);
-        DMLManager.insertAsSystem(requestBodyAttachment);
+        insert requestBodyAttachment;
     }
 
 }

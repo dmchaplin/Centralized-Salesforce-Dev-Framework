@@ -18,7 +18,7 @@ public with sharing class AccountsTest {
         // Generate account records from factory
         list<Account> testAccounts = (list<Account>)DataFactoryService.CreateRecords('Account',new list<String>{'Name'},'TestAcct',1);
         // Insert test accounts
-        DMLManager.insertAsSystem(testAccounts);
+        insert testAccounts;
     }
 
 	/** 
@@ -35,11 +35,11 @@ public with sharing class AccountsTest {
 
 		Account testAccount = (Account)SObjectService.RunQuery('Account', new List<String>{'Id','Name'}, new List<String>(), 'Name = \'TestAcct1\'', new List<String>{'Name'}, SObjectService.ASC_DIR_ORDER, 1, false)[0];
 		testAccount.Name = 'TestAcct2';
-		DMLManager.updateAsSystem(testAccount);
+		update testAccount;
 
 		// KillSwitch
 		ConfigService.testKillSwitch = true;
-		DMLManager.updateAsSystem(testAccount);
+		update testAccount;
 
 		ConfigService.resetTestSettings();
 
@@ -50,24 +50,24 @@ public with sharing class AccountsTest {
 		ConfigService.testEmailDebugInfoLog = true;
 		ConfigService.testDebugInfoMaxAge = 7;
 		ConfigService.testDebugInfoEmails = 'test@test.com';
-		DMLManager.updateAsSystem(testAccount);
+		update testAccount;
 
 		TriggerFactory.FakeException = false;
 		ConfigService.resetTestSettings();
 
-		DMLManager.updateAsSystem(testAccount);
+		update testAccount;
 
 		// Simulate Concurrency Error
 		TriggerHandlerBase.SimulateConcurrencyError = new List<Boolean>{true};
-		DMLManager.updateAsSystem(testAccount);
+		update testAccount;
 
 		// Reset Simulate Concurrency Error Variable
 		TriggerHandlerBase.SimulateConcurrencyError = null;
-		DMLManager.updateAsSystem(testAccount);
+		update testAccount;
 		
 		testAccount = (Account)SObjectService.RunQuery('Account', null, false, 'Name = \'TestAcct2\'', null, null, null, null)[0];
 		System.assertEquals(testAccount.Website,'www.salesforce.com','Error in testAccountTrigger - Stacktrace: ' + DiagnosticsInstrumentation.ExceptionTrace);
-		DMLManager.deleteAsSystem(testAccount);
+		delete testAccount;
 		
 		list<Account> allAccounts = SObjectService.RunQuery('Account', null, false, null, null, null, null, null);
 		System.assert(allAccounts.isEmpty(),'Error in testAccountTrigger - Stacktrace: ' + DiagnosticsInstrumentation.ExceptionTrace);
@@ -78,7 +78,7 @@ public with sharing class AccountsTest {
 		
 		// Simulate RepeatingFuture
 		AsyncRequest__c ar = new AsyncRequest__c(AsyncType__c='Future:Default',ScheduledTime__c = System.now(),Params__c=allAccounts[0].Id);
-		DMLManager.insertAsSystem(ar);
+		insert ar;
 		RepeatingFuture.Start();
 		System.assert(!allAccounts.isEmpty(),'Error in testAccountTrigger - Stacktrace: ' + DiagnosticsInstrumentation.ExceptionTrace);
 	}
